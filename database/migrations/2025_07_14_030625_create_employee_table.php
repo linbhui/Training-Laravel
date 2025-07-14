@@ -15,6 +15,7 @@ return new class extends Migration
             $table->id();
             $table->foreignId('team_id')->constrained('team');
             $table->string('email', 128);
+            $table->unique(['team_id', 'email']);
             $table->string('first_name', 128);
             $table->string('last_name', 128);
             $table->string('password', 64);
