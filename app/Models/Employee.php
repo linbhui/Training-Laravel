@@ -2,11 +2,14 @@
 
 namespace App\Models;
 
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
 class Employee extends Model
 {
-    protected $table= 'employee';
+    use HasFactory;
+
+    protected $table= 'employees';
 
     public $timestamps = true;
     const CREATED_AT = 'ins_datetime';
@@ -37,4 +40,35 @@ class Employee extends Model
     protected $hidden = [
         'password'
     ];
+
+    protected $casts = [
+        'birthday' => 'date',
+        'ins_datetime' => 'datetime',
+        'upd_datetime' => 'datetime',
+    ];
+
+    public function team()
+    {
+        return $this->belongsTo(Team::class);
+    }
+
+    public function creator()
+    {
+        return $this->belongsTo(Employee::class, 'ins_id');
+    }
+
+    public function updator()
+    {
+        return $this->belongsTo(Employee::class, 'upd_id');
+    }
+
+    public function createdEmployees()
+    {
+        return $this->hasMany(Employee::class, 'ins_id');
+    }
+
+    public function updatedEmployees()
+    {
+        return $this->hasMany(Employee::class, 'upd_id');
+    }
 }

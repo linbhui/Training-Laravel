@@ -2,11 +2,14 @@
 
 namespace App\Models;
 
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
 class Team extends Model
 {
-    protected $table = 'team';
+    use HasFactory;
+
+    protected $table = 'teams';
 
     public $timestamps = true;
     const CREATED_AT = 'ins_datetime';
@@ -21,5 +24,24 @@ class Team extends Model
         'del_flag',
     ];
 
+    protected $casts = [
+        'ins_datetime' => 'datetime',
+        'upd_datetime' => 'datetime',
+    ];
+
+    public function employees()
+    {
+        return $this->hasMany(Employee::class);
+    }
+
+    public function creator()
+    {
+        return $this->belongsTo(Employee::class, 'ins_id');
+    }
+
+    public function updator()
+    {
+        return $this->belongsTo(Employee::class, 'upd_id');
+    }
 
 }
