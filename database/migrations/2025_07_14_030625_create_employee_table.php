@@ -11,9 +11,9 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('employee', function (Blueprint $table) {
+        Schema::create('employees', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('team_id')->constrained('team');
+            $table->unsignedBigInteger('team_id');
             $table->string('email', 128);
             $table->unique(['team_id', 'email']);
             $table->string('first_name', 128);
@@ -27,17 +27,15 @@ return new class extends Migration
             $table->char('position', 1);
             $table->char('status', 1);
             $table->char('type_of_work', 1);
-            $table->foreignId('ins_id')->constrained('employee');
-            $table->foreignId('upd_id')->nullable()->constrained('employee');
+            $table->unsignedBigInteger('ins_id');
+            $table->unsignedBigInteger('upd_id')->nullable();
             $table->timestamp('ins_datetime')->useCurrent();
             $table->timestamp('upd_datetime')->nullable();
             $table->char('del_flag', 1)->default(0);
         });
     }
 
-    /**
-     * Reverse the migrations.
-     */
+
     public function down(): void
     {
         Schema::dropIfExists('employee');

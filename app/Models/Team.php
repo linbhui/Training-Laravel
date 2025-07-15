@@ -2,11 +2,14 @@
 
 namespace App\Models;
 
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
 class Team extends Model
 {
-    protected $table = 'team';
+    use HasFactory;
+
+    protected $table = 'teams';
 
     public $timestamps = true;
     const CREATED_AT = 'ins_datetime';
@@ -20,6 +23,7 @@ class Team extends Model
         'upd_datetime',
         'del_flag',
     ];
+
 
 
 }
