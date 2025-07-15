@@ -2,11 +2,14 @@
 
 namespace App\Models;
 
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
 class Employee extends Model
 {
-    protected $table= 'employee';
+    use HasFactory;
+
+    protected $table= 'employees';
 
     public $timestamps = true;
     const CREATED_AT = 'ins_datetime';

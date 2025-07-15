@@ -11,11 +11,11 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('team', function (Blueprint $table) {
+        Schema::create('teams', function (Blueprint $table) {
             $table->id();
             $table->string('name', 128)->unique();
-            $table->foreignId('ins_id')->constrained('employee');
-            $table->foreignId('upd_id')->nullable()->constrained('employee');
+            $table->unsignedBigInteger('ins_id');
+            $table->unsignedBigInteger('upd_id')->nullable();
             $table->timestamp('ins_datetime')->useCurrent();
             $table->timestamp('upd_datetime')->nullable();
             $table->char('del_flag', 1)->default(0);
