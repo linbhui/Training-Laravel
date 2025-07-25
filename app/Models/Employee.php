@@ -2,19 +2,17 @@
 
 namespace App\Models;
 
+use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
-class Employee extends Model
+class Employee extends Authenticatable
 {
     use HasFactory;
 
     protected $table= 'employees';
 
-    public $timestamps = true;
-    const CREATED_AT = 'ins_datetime';
-    const UPDATED_AT = 'upd_datetime';
-
+    public $timestamps = false;
 
     protected $fillable = [
         'team_id',
@@ -57,7 +55,7 @@ class Employee extends Model
         return $this->belongsTo(Employee::class, 'ins_id');
     }
 
-    public function updator()
+    public function updater()
     {
         return $this->belongsTo(Employee::class, 'upd_id');
     }

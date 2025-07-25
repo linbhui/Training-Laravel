@@ -1,11 +1,62 @@
-@import 'tailwindcss';
-
-@source '../../vendor/laravel/framework/src/Illuminate/Pagination/resources/views/*.blade.php';
-@source '../../storage/framework/views/*.php';
-@source '../**/*.blade.php';
-@source '../**/*.js';
-
-@theme {
-    --font-sans: 'Instrument Sans', ui-sans-serif, system-ui, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji',
-        'Segoe UI Symbol', 'Noto Color Emoji';
+body {
+    font-family: 'Instrument Sans', sans-serif;
+    font-size: 16px;
+    background-color: #e2edf5;
+    margin: 0;
 }
+
+/* Sidebar */
+#sidebar {
+    width: 250px;
+    min-height: 100vh;
+    transition: width 1s;
+}
+
+.sidebar-collapsed {
+    width: 50px !important;
+}
+
+.sidebar-collapsed h2,
+.sidebar-collapsed .nav-link {
+    opacity: 0;
+    pointer-events: none;
+}
+
+.main-expanded {
+    margin-left: 50px !important;
+}
+
+/* Toggle button */
+.toggle-btn {
+    z-index: 1;
+    color: white;
+    border: none;
+    font-size: 1.5rem;
+    cursor: pointer;
+    transition: left 0.3s;
+}
+
+
+.nav-link {
+    transition: 0.2s ease;
+}
+
+.nav-link.side:hover {
+    background-color: rgba(255, 255, 255, 0.1);
+    border-radius: 5px;
+}
+
+.nav-link.enabled {
+    background-color: #212529;
+    color: white;
+}
+
+.nav-link.disabled {
+    background-color: #f8f9fa;
+    color: grey;
+}
+
+h1, h2 {
+    font-weight: 600;
+}
+

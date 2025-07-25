@@ -11,9 +11,7 @@ class Team extends Model
 
     protected $table = 'teams';
 
-    public $timestamps = true;
-    const CREATED_AT = 'ins_datetime';
-    const UPDATED_AT = 'upd_datetime';
+    public $timestamps = false;
 
     protected $fillable = [
         'name',
@@ -39,7 +37,7 @@ class Team extends Model
         return $this->belongsTo(Employee::class, 'ins_id');
     }
 
-    public function updator()
+    public function updater()
     {
         return $this->belongsTo(Employee::class, 'upd_id');
     }
