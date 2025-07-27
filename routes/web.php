@@ -16,12 +16,6 @@ Route::prefix('management')->group(function () {
     Route::post('login', [LoginController::class, 'authenticate'])->name('management.login');
     Route::post('logout', [LoginController::class, 'logout'])->name('management.logout');
 
-    Route::get('/mailable', function () {
-        $example = App\Models\Employee::find(1);
-
-        return new App\Mail\EmployeeCreated($example, '123');
-    });
-
     Route::middleware(AuthenticateEmployee::class)->group(function () {
         Route::get('/', [DashboardController::class, 'index'])->name('manage.dashboard');
 
@@ -45,6 +39,7 @@ Route::prefix('management')->group(function () {
             Route::get('search', 'search')->name('employee.search');
             Route::get('delete/{id}', 'delete')->name('employee.delete');
             Route::get('recover/{id}', 'recover')->name('employee.recover');
+            Route::get('export', 'export')->name('employee.export');
         });
     });
 });
