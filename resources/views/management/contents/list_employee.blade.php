@@ -7,13 +7,30 @@
         </div>
     @endif
 
-    @isset ($result)
-        <div class="text-muted small fst-italic mb-3">
-            {{ $result }}
-        </div>
-    @endisset
+   <div class="row align-items-center mb-3">
+       @isset ($result)
+           <div class="col-auto text-muted small fst-italic">
+               {{ $result }}
+           </div>
 
-    {{-- Team Table --}}
+       {{-- Export data--}}
+           @if (count($employees) !== 0)
+               <form class="col flex justify-end gap-2" action="{{ route('employee.export') }}" method="get">
+                   <input type="hidden" name="search" value="{{request('search')}}">
+                   <input type="hidden" name="by" value="{{request('by')}}">
+                   <select name="export" class="bg-light">
+                       <option value="csv">.csv</option>
+                       <option value="xlsx">.xlsx</option>
+                   </select>
+                   <button type="submit" class="btn btn-outline-dark">
+                       Export
+                   </button>
+               </form>
+           @endif
+       @endisset
+   </div>
+
+    {{-- Employee Table --}}
     <div class="table-responsive rounded">
         <table class="table table-bordered table-hover align-middle w-100 shadow-sm rounded z-10">
             <thead class="table-dark">

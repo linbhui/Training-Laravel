@@ -10,12 +10,13 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Validation\Rule;
+use PhpOffice\PhpSpreadsheet\Spreadsheet;
+use PhpOffice\PhpSpreadsheet\Writer\Csv;
+use PhpOffice\PhpSpreadsheet\Writer\Xlsx;
+use Symfony\Component\HttpFoundation\StreamedResponse;
 
 class EmployeeController extends Controller
 {
-    /**
-     * Display a listing of the resource.
-     */
     public function index(Request $request)
     {
         $teamName = Team::select('id', 'name')->get();
@@ -212,6 +213,93 @@ class EmployeeController extends Controller
 
        return view('management.contents.list_employee',
            compact('employees', 'teamName', 'result'));
+   }
+
+   public function export(Request $request) {
+       $format = $request->input('export', 'csv');
+       $searchBy = $request->input('by');
+       $search = $request->input('search');
+
+       if ($searchBy === 'team') {
+           $team = Team::findOrFail($search);
+           $employees = Employee::where('del_flag', 0)->where('team_id', $team->id)->with('team')->get();
+       } else if ($searchBy === 'email') {
+           $employees = Employee::where('del_flag', 0)->where('email', $search)->with('team')->get();
+       } else {
+           $employees = Employee::where('del_flag', 0)
+               ->where(function ($query) use ($search) {
+                   $query->where('last_name', 'LIKE', "%{$search}%")
+                       ->orWhere('first_name', 'LIKE', "%{$search}%");
+               })->with('team')->get();
+       }
+
+       $spreadsheet = new Spreadsheet();
+       $sheet = $spreadsheet->getActiveSheet();
+
+       $sheet->fromArray([
+           ['ID', 'Team', 'Email', 'First Name', 'Last Name', 'Gender', 'Birthday', 'Address',
+               'Salary', 'Position', 'Work Status', 'Work Type', 'Created Time']
+       ], null, 'A1');
+
+
+       $row = 2;
+
+       foreach ($employees as $employee) {
+           $position = match ($employee->position) {
+               '1' => 'Manager',
+               '2' => 'Team Leader',
+               '3' => 'BSE',
+               '4' => 'Dev',
+               '5' => 'Intern',
+               default => '--',
+           };
+
+           $workType = match ($employee->type_of_work) {
+               '1' => 'Full-time',
+               '2' => 'Part-time',
+               '3' => 'Probational Staff',
+               '4' => 'Intern',
+               default => '--',
+           };
+
+           $sheet->setCellValue("A$row", $employee->id);
+           $sheet->setCellValue("B$row", $employee->team->name ?? 'N/A');
+           $sheet->setCellValue("C$row", $employee->email);
+           $sheet->setCellValue("D$row", $employee->first_name);
+           $sheet->setCellValue("E$row", $employee->last_name);
+           $sheet->setCellValue("F$row", $employee->gender);
+           $sheet->setCellValue("G$row", $employee->birthday);
+           $sheet->setCellValue("H$row", $employee->address);
+           $sheet->setCellValue("I$row", $employee->salary);
+           $sheet->setCellValue("J$row", $position);
+           $sheet->setCellValue("K$row", $employee->status == 1 ? 'On Working' : 'Retired');
+           $sheet->setCellValue("L$row", $workType);
+           $sheet->setCellValue("M$row", $employee->ins_datetime);
+
+           $row++;
+       }
+
+       $filename = 'employees_' . now()->format('Ymd_His') . '.' . $format;
+
+       return response()->streamDownload(function () use ($spreadsheet, $format) {
+           if ($format === 'xlsx') {
+               $writer = new Xlsx($spreadsheet);
+           } else {
+               $writer = new Csv($spreadsheet);
+               $writer->setDelimiter(',');
+               $writer->setEnclosure('"');
+               $writer->setSheetIndex(0);
+           }
+
+           $writer->save('php://output');
+       }, $filename, [
+           'Content-Type' => $format === 'xlsx'
+               ? 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+               : 'text/csv',
+           'Cache-Control' => 'no-store, no-cache',
+           'Content-Disposition' => "attachment; filename=\"$filename\"",
+       ]);
+
    }
 }
 
