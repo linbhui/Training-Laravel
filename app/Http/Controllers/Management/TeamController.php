@@ -10,14 +10,15 @@ class TeamController extends Controller
 {
     public function index(Request $request)
     {
-        $teams = Team::with(['creator', 'updater'])->paginate(10);
-
         $sort = $request->input('sort');
+
+        $query = Team::with(['creator', 'updater']);
+
         if (!empty($sort)) {
-            $query = Team::with(['creator', 'updater']);
-            $query->orderBy('name', $sort);
-            $teams = $query->paginate(10)->appends(['sort' => $sort]);
+            $query = $query->orderBy('name', $sort);
         }
+
+        $teams = $query->paginate(10)->appends(['sort' => $sort]);
 
         return view('management.contents.list_team', compact('teams'));
     }
@@ -125,11 +126,7 @@ class TeamController extends Controller
             }
         } else {
             $teams = Team::where('del_flag', 0)->where('name', 'LIKE', "%{$search}%")->with(['creator', 'updater'])->paginate(10);
-            if (empty($teams)) {
-                $result = "No team found.";
-            } else {
-                $result = "Results for: " . $search;
-            }
+            $result = "Results for: " . $search;
         }
 
         return view('management.contents.list_team', compact('teams', 'result'));
