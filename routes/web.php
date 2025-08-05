@@ -12,12 +12,17 @@ Route::get('/', function () {
 });
 
 Route::prefix('management')->group(function () {
-    Route::get('login', [LoginController::class, 'index'])->name('management.showLogin');
-    Route::post('login', [LoginController::class, 'authenticate'])->name('management.login');
-    Route::post('logout', [LoginController::class, 'logout'])->name('management.logout');
+    Route::controller(LoginController::class)->group(function () {
+        Route::get('login', 'index')->name('management.showLogin');
+        Route::post('login', 'authenticate')->name('management.login');
+        Route::post('logout', 'logout')->name('management.logout');
+        Route::get('logout', function () {
+            return redirect()->route('management.showLogin');
+        });
+    });
 
     Route::middleware(AuthenticateEmployee::class)->group(function () {
-        Route::get('/', [DashboardController::class, 'index'])->name('manage.dashboard');
+        Route::get('/', [DashboardController::class, 'index'])->name('management.dashboard');
 
         Route::prefix('team')->controller(TeamController::class)->group(function () {
             Route::get('/', 'index')->name('team.index');

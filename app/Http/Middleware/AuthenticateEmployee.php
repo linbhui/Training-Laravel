@@ -9,18 +9,11 @@ use Illuminate\Support\Facades\Auth;
 
 class AuthenticateEmployee
 {
-    /**
-     * Handle an incoming request.
-     *
-     * @param  \Closure(\Illuminate\Http\Request): (\Symfony\Component\HttpFoundation\Response)  $next
-     */
     public function handle(Request $request, Closure $next): Response
     {
         if (!Auth::guard('employees')->check()) {
             return redirect()->route('management.showLogin');
         }
-
-        $employee = Auth::guard('employees')->user();
 
         return $next($request);
     }
