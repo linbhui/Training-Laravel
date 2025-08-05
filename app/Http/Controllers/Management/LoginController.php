@@ -13,7 +13,7 @@ class LoginController extends Controller
     public function index()
     {
         if (Auth::guard('employees')->check()) {
-            return redirect()->route('manage.dashboard');
+            return redirect()->route('management.dashboard');
         }
 
         return view('management.layouts.login');

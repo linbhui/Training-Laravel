@@ -7,15 +7,16 @@ use App\Models\Team;
 use App\Models\Employee;
 use App\Mail\EmployeeCreated;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Validation\Rule;
+use PhpOffice\PhpSpreadsheet\Spreadsheet;
+use PhpOffice\PhpSpreadsheet\Writer\Csv;
+use PhpOffice\PhpSpreadsheet\Writer\Xlsx;
 
 class EmployeeController extends Controller
 {
-    /**
-     * Display a listing of the resource.
-     */
     public function index(Request $request)
     {
         $teamName = Team::select('id', 'name')->get();
@@ -56,9 +57,9 @@ class EmployeeController extends Controller
             'address' => 'required|string|max:256',
             'avatar' => 'required|image|mimes:jpg,jpeg,png|max:2048',
             'salary' => 'required|numeric|min:0',
-            'position' => 'required|string|max:1',
+            'position' => 'required|in:1,2,3,4,5',
             'status' => 'required|in:1,2',
-            'type_of_work' => 'required|string|max:1'
+            'type_of_work' => 'required|in:1,2,3,4'
         ]);
 
        if ($validator->fails()) {
@@ -79,7 +80,7 @@ class EmployeeController extends Controller
            'email' => $request->input('email'),
            'first_name' => $request->input('first_name'),
            'last_name' => $request->input('last_name'),
-           'password' => password_hash($request->input('password'), PASSWORD_DEFAULT),
+           'password' => Hash::make($request->input('password')),
            'gender' => $request->input('gender'),
            'birthday' => $request->input('birthday'),
            'address' => $request->input('address'),
@@ -126,9 +127,9 @@ class EmployeeController extends Controller
             'address' => 'nullable|string|max:256',
             'avatar' => 'nullable|image|mimes:jpg,jpeg,png|max:2048',
             'salary' => 'nullable|numeric|min:0',
-            'position' => 'nullable|string|max:1',
+            'position' => 'nullable|in:1,2,3,4,5',
             'status' => 'nullable|in:1,2',
-            'type_of_work' => 'nullable|string|max:1',
+            'type_of_work' => 'nullable|in:1,2,3,4',
         ]);
 
         if ($validator->fails()) {
@@ -143,21 +144,22 @@ class EmployeeController extends Controller
         ]);
 
         foreach ($edited as $field => $value) {
-            if ($value !== null && $value !== '') {
+            if (!is_null($value)) {
                 $employee->$field = $value;
             }
         }
 
         if ($request->filled('password')) {
-            $employee->password = password_hash($request->input('password'), PASSWORD_DEFAULT);
+            $employee->password = Hash::make($request->input('password'));
         }
 
         if ($request->hasFile('avatar')) {
             $employee->avatar = $request->file('avatar')->store('avatars', 'public');
         }
 
-        $employee->save();
         $employee->upd_id = session('id');
+        $employee->upd_datetime = now();
+        $employee->save();
 
         return redirect()->route('employee.index')->with('notification', 'Employee updated successfully!');
     }
@@ -190,8 +192,6 @@ class EmployeeController extends Controller
    {
        $searchBy = $request->input('by');
        $search = $request->input('search');
-       $employees = [];
-       $result = '';
        $teamName = Team::select('id', 'name')->get();
 
        if ($searchBy === 'team') {
@@ -212,6 +212,91 @@ class EmployeeController extends Controller
 
        return view('management.contents.list_employee',
            compact('employees', 'teamName', 'result'));
+   }
+
+   public function export(Request $request) {
+       $format = $request->input('export', 'csv');
+       $searchBy = $request->input('by');
+       $search = $request->input('search');
+
+       if ($searchBy === 'team') {
+           $team = Team::findOrFail($search);
+           $employees = Employee::where('del_flag', 0)->where('team_id', $team->id)->with('team')->get();
+       } else if ($searchBy === 'email') {
+           $employees = Employee::where('del_flag', 0)->where('email', $search)->with('team')->get();
+       } else {
+           $employees = Employee::where('del_flag', 0)
+               ->where(function ($query) use ($search) {
+                   $query->where('last_name', 'LIKE', "%{$search}%")
+                       ->orWhere('first_name', 'LIKE', "%{$search}%");
+               })->with('team')->get();
+       }
+
+       $spreadsheet = new Spreadsheet();
+       $sheet = $spreadsheet->getActiveSheet();
+
+       $sheet->fromArray([
+           ['ID', 'Team', 'Email', 'First Name', 'Last Name', 'Gender', 'Birthday', 'Address',
+               'Salary', 'Position', 'Work Status', 'Work Type', 'Created Time']
+       ], null, 'A1');
+
+
+       $row = 2;
+
+       foreach ($employees as $employee) {
+           $position = match ($employee->position) {
+               '1' => 'Manager',
+               '2' => 'Team Leader',
+               '3' => 'BSE',
+               '4' => 'Dev',
+               '5' => 'Intern'
+           };
+
+           $workType = match ($employee->type_of_work) {
+               '1' => 'Full-time',
+               '2' => 'Part-time',
+               '3' => 'Probational Staff',
+               '4' => 'Intern'
+           };
+
+           $sheet->setCellValue("A$row", $employee->id);
+           $sheet->setCellValue("B$row", $employee->team->name ?? 'N/A');
+           $sheet->setCellValue("C$row", $employee->email);
+           $sheet->setCellValue("D$row", $employee->first_name);
+           $sheet->setCellValue("E$row", $employee->last_name);
+           $sheet->setCellValue("F$row", $employee->gender);
+           $sheet->setCellValue("G$row", $employee->birthday);
+           $sheet->setCellValue("H$row", $employee->address);
+           $sheet->setCellValue("I$row", $employee->salary);
+           $sheet->setCellValue("J$row", $position);
+           $sheet->setCellValue("K$row", $employee->status == 1 ? 'On Working' : 'Retired');
+           $sheet->setCellValue("L$row", $workType);
+           $sheet->setCellValue("M$row", $employee->ins_datetime);
+
+           $row++;
+       }
+
+       $filename = 'employees_' . now()->format('Ymd_His') . '.' . $format;
+
+       return response()->streamDownload(function () use ($spreadsheet, $format) {
+           if ($format === 'xlsx') {
+               $writer = new Xlsx($spreadsheet);
+           } else {
+               $writer = new Csv($spreadsheet);
+               $writer->setDelimiter(',');
+               $writer->setEnclosure('"');
+               $writer->setSheetIndex(0);
+           }
+
+           $writer->save('php://output');
+       }, $filename, [
+           'Content-Type' => $format === 'xlsx'
+               ? 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+               : 'text/csv',
+           'Cache-Control' => 'no-store, no-cache',
+           'Content-Disposition' => "attachment; filename=\"$filename\"",
+       ]);
+
    }
 }
 
